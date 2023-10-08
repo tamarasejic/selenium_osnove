@@ -119,6 +119,54 @@ package p05_10_2023;
 //        Proverite da li su podaci na Checkout: Overview stranici ispravni
 //        Klik na finish
 //        Validirati da se prikazuje poruka za uspesno porucivanje Thank you for your order!
+//
+//        Test #10:  Validate Social Links in Footer
+//        Podaci:
+//        username: standard_user
+//        password: secret_sauce
+//        Koraci:
+//        Ucitati home stranicu
+//        Uneti username i password
+//        Klik na login dugme
+//        Verifikovati da je url stranice /inventory.html
+//        Odskrolati do footera
+//        Validirati sve linkove iz footera da li vracaju status 200. To su linkovi linkedin, facebook i twitter
+//
+//        Test #11:(ZA VEZBANJE)  Test Default Name Sort (A-Z)
+//        Podaci:
+//        username: standard_user
+//        password: secret_sauce
+//        Koraci:
+//        Ucitati home stranicu
+//        Uneti username i password
+//        Klik na login dugme
+//        Verifikovati da je url stranice /inventory.html
+//        Proveriti da li su nazivi proizvoda sortirani prema abacednom redu (A-Z)
+//
+//        Test #12:(ZA VEZBANJE)  Test Invert Named Sort (Z-A)
+//        Podaci:
+//        username: standard_user
+//        password: secret_sauce
+//        Koraci:
+//        Ucitati home stranicu
+//        Uneti username i password
+//        Klik na login dugme
+//        Verifikovati da je url stranice /inventory.html
+//        Za soritranje selektovati Name (Z to A)
+//        Proveriti da li su nazivi proizvoda sortirani prema abacednom redu (Z to A)
+//
+//        Test #13:(ZA VEZBANJE)  Test Sort Price Low High
+//        Podaci:
+//        username: standard_user
+//        password: secret_sauce
+//        Koraci:
+//        Ucitati home stranicu
+//        Uneti username i password
+//        Klik na login dugme
+//        Verifikovati da je url stranice /inventory.html
+//        Za soritranje selektovati Price (low to high)
+//        Proveriti da li su nazivi proizvoda sortirani prema ceni od najnize do najvise
+
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.By;
@@ -128,12 +176,21 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.*;
+import p02_10_2023.UrlHelpers;
 
+import java.io.IOException;
+import java.net.CookieHandler;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SwagLabsTests {
     private WebDriver driver;
@@ -494,6 +551,152 @@ public class SwagLabsTests {
 
         driver.findElement(By.id("finish"))
                 .click();
+    }
+//    >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> HW 05.10.2023.
+
+    @Test (priority = 10, retryAnalyzer = SwagLabsRetry.class)
+    public void validateSocialLinksInFooter() throws IOException {
+        String username = "standard_user";
+        String password = "secret_sauce";
+
+        driver.findElement(By.id("user-name"))
+                .sendKeys(username);
+        driver.findElement(By.id("password"))
+                .sendKeys(password);
+
+        driver.findElement(By.id("login-button"))
+                .click();
+
+        wait
+                .withMessage("Successful login did not redirect to page https://www.saucedemo.com/inventory.html")
+                .until(ExpectedConditions.urlContains("/inventory.html"));
+
+        new Actions(driver)
+                .scrollToElement(driver.findElement(By.className("footer_copy")))
+                .perform();
+
+        List<WebElement> links = driver.findElements(By.cssSelector(".social a"));
+
+        for (int i = 0; i < links.size(); i++) {
+            String url = links.get(i).getAttribute("href");
+            int statusCode = UrlHelpers.getHTTPResponseStatusCodeCookieHandler(url);
+
+            Assert.assertTrue(statusCode >= 200 && statusCode <  400,
+                    url + "  is a Broken link - HTTP Status Code is not between 200 and 400.");
+        }
+
+    }
+
+    @Test (priority = 11, retryAnalyzer = SwagLabsRetry.class)
+    public void testDefaultNameSortAZ(){
+        String username = "standard_user";
+        String password = "secret_sauce";
+
+        driver.findElement(By.id("user-name"))
+                .sendKeys(username);
+        driver.findElement(By.id("password"))
+                .sendKeys(password);
+
+        driver.findElement(By.id("login-button"))
+                .click();
+
+        wait
+                .withMessage("Successful login did not redirect to page https://www.saucedemo.com/inventory.html")
+                .until(ExpectedConditions.urlContains("/inventory.html"));
+
+        List<WebElement> products = driver.findElements(By.className("inventory_item_name"));
+        ArrayList<String> productNamesReal = products.stream()
+                                                        .map(WebElement::getText)
+                                                        .collect(Collectors
+                                                                .toCollection(ArrayList::new));
+
+        ArrayList<String> tempNames = new ArrayList<>(productNamesReal);
+        Collections.sort(tempNames);
+
+        Assert.assertEquals(productNamesReal, tempNames, "Default product names are not sorted A-Z.");
+
+    }
+
+    @Test (priority = 12, retryAnalyzer = SwagLabsRetry.class)
+    public void testInvertNameSortAZ(){
+        String username = "standard_user";
+        String password = "secret_sauce";
+
+        driver.findElement(By.id("user-name"))
+                .sendKeys(username);
+        driver.findElement(By.id("password"))
+                .sendKeys(password);
+
+        driver.findElement(By.id("login-button"))
+                .click();
+
+        wait
+                .withMessage("Successful login did not redirect to page https://www.saucedemo.com/inventory.html")
+                .until(ExpectedConditions.urlContains("/inventory.html"));
+
+        new Select(driver.findElement(By.className("product_sort_container"))).selectByValue("za");
+
+        wait
+                .withMessage("Product name sort option 'Name (Z to A)' is not selected.")
+                .until(ExpectedConditions
+                        .textToBePresentInElementLocated(By.className("active_option"),
+                        "Name (Z to A)"));
+
+        List<WebElement> products = driver.findElements(By.className("inventory_item_name"));
+
+        ArrayList<String> productNamesReal = products.stream()
+                                                        .map(WebElement::getText)
+                                                        .collect(Collectors
+                                                                .toCollection(ArrayList::new));
+
+        ArrayList<String> tempNames = new ArrayList<>(productNamesReal);
+        Collections.sort(tempNames, Collections.reverseOrder());
+
+        Assert.assertEquals(productNamesReal, tempNames, "Invert product names are not sorted Z-A.");
+
+    }
+
+
+    @Test (priority = 13, retryAnalyzer = SwagLabsRetry.class)
+    public void testSortPriceLowHigh(){
+        String username = "standard_user";
+        String password = "secret_sauce";
+
+        driver.findElement(By.id("user-name"))
+                .sendKeys(username);
+        driver.findElement(By.id("password"))
+                .sendKeys(password);
+
+        driver.findElement(By.id("login-button"))
+                .click();
+        wait
+                .withMessage("Successful login did not redirect to page https://www.saucedemo.com/inventory.html")
+                .until(ExpectedConditions.urlContains("/inventory.html"));
+
+        new Select(driver.findElement(By.className("product_sort_container"))).selectByValue("lohi");
+
+        wait
+                .withMessage("Product name sort option 'Price (low to high)' is not selected.")
+                .until(ExpectedConditions
+                        .textToBePresentInElementLocated(By.className("active_option"),
+                                "Price (low to high)"));
+
+        List<WebElement> products = driver.findElements(By.className("inventory_item_price"));
+
+        ArrayList<Double> priceList = products.stream()
+                                                .map(WebElement::getText)
+                                                .map(str -> str.replace("$", ""))
+                                                .map(Double::valueOf)
+                                                .collect(Collectors
+                                                        .toCollection(ArrayList::new));
+
+        ArrayList<Double> sortedPrices = new ArrayList<Double>(priceList);
+        Collections.sort(sortedPrices);
+
+        Assert.assertEquals(priceList,
+                sortedPrices,
+                "Product names are not sorted by 'Price (low to high)'.");
+
     }
 
     @AfterMethod
